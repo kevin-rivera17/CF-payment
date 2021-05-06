@@ -1,0 +1,74 @@
+<script>
+/* DO NOT CHANGE */
+window.cfpt = window.cfpt || {};
+/* END DO NOT CHANGE */
+
+/* product configuration */
+window.cfpt.productMap = [
+    {
+        'paypal': '123456',
+        'creditcard': '123457'
+    }
+];
+
+</script>
+
+<script>
+/**************************
+* Copyright 2018 CF Pro Tools, All Rights Reserved
+* Do not share, or distribute this code without author's consent.
+* This copyright notice must remain in place whenever using
+* this code - DO NOT REMOVE
+* Author: Jaime Smith
+* Website: https://cfprotools.com
+**************************/
+window.cfpt = window.cfpt || {};
+window.cfpt.payment_type = 'creditcard';
+
+$(function () {
+    var firstYesLink = $('[href*="#yes-link"], [data-imagelink*="#yes-link"]').first();
+    var firstPurchase = firstYesLink.data('purchase');
+
+    if (Object.keys(firstPurchase).length < 2) {
+        window.cfpt.payment_type = 'paypal';
+    }
+
+    $('[href*="#yes-link"]').each(function () {
+        var purchase = $(this).data('purchase');
+
+        $.each(window.cfpt.productMap, function (index, value) {
+            var ppProductId = value.paypal;
+            var ccProductId = value.creditcard;
+
+            if (purchase.product_id == ppProductId || purchase.product_id == ccProductId) {
+                purchase.product_id = value[window.cfpt.payment_type];
+                $(this).data('purchase', purchase);
+            }
+        });
+
+        var revealPaypal = $(this).clone();
+        revealPaypal.attr('href','#reveal-paypal');
+
+        $(this).after(revealPaypal);
+
+        $(this).show();
+        revealPaypal.hide();
+        $(this).siblings('.paypal-button').first().hide();
+
+        if (window.cfpt.payment_type == 'paypal') {
+            $(this).hide();
+            revealPaypal.show();
+
+            revealPaypal.on('click', function (ev) {
+                ev.stopPropagation();
+                ev.preventDefault();
+
+                $(this).hide();
+                $(this).siblings('.paypal-button').first().fadeIn();
+
+                return false;
+            });
+        }
+    });
+});
+</script>

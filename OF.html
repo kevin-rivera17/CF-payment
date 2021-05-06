@@ -1,0 +1,226 @@
+<script>
+/* DO NOT CHANGE */
+window.cfpt = window.cfpt || {};
+/* END DO NOT CHANGE */
+
+/* product configuration */
+window.cfpt.productMap = [
+    {
+        'paypal': '123456',
+        'creditcard': '123457'
+    },
+    {
+        'paypal': '123458',
+        'creditcard': '123459'
+    }
+];
+
+</script>
+
+<script>
+/**************************
+* Copyright 2018 CF Pro Tools, All Rights Reserved
+* Do not share, or distribute this code without author's consent.
+* This copyright notice must remain in place whenever using
+* this code - DO NOT REMOVE
+* Author: Jaime Smith
+* Website: https://cfprotools.com
+**************************/
+
+window.oldStripeResponseHandler = window.stripeResponseHandler;
+window.oldStripe = window.Stripe;
+
+$(function () {
+
+	$('.o2step_step2 .elOrderProductOptions').first().attr('data-de-type', 'orpo');
+
+    var revealPaypal = $('a[href="#submit-form"], a[href="#submit-form-2step-order"]').first().clone();
+    revealPaypal.attr('href','#reveal-paypal');
+    $('a[href="#submit-form"], a[href="#submit-form-2step-order"]').after(revealPaypal);
+
+    $('.paypal-button-context-iframe').hide();
+    $('a[href="#submit-form"], a[href="#submit-form-2step-order"]').show();
+
+    $('[data-title="cf-pay-selector-pp"], [data-title="cf-pay-selector-cc"]').on('click', function () {
+        $('.selected-pay').removeClass('selected-pay');
+        $(this).addClass('selected-pay');
+
+        $('a[href="#submit-form"], a[href="#submit-form-2step-order"]').show();
+        $('.paypal-button-context-iframe').hide();
+    });
+
+    $('[data-title="cf-pay-selector-pp"]').on('click', function () {
+        window.cfpt.payment_type = 'paypal';
+
+        if (typeof(window.Stripe) != 'undefined') {
+            window.Stripe = window.oldStripe;
+            window.stripeResponseHandler = window.oldStripeResponseHandler;
+        }
+
+        $('a[href="#submit-form"], a[href="#submit-form-2step-order"]').hide();
+        $('a[href="#reveal-paypal"]').show();
+        showPaypalProducts();
+    });
+
+    function showPaypalProducts() {
+        var cfptSelectedProduct = $('input[name="purchase[product_id]"]:checked','[data-de-type="orpo"]');
+        var cfptSelectedProductID = cfptSelectedProduct.val();
+
+        $.each(window.cfpt.productMap, function (index, value) {
+            var ppProductId = value.paypal;
+            var ccProductId = value.creditcard;
+
+            var bumpProd = $('#bump-offer');
+            var bumpProdId = bumpProd.val();
+            var bumpChecked = bumpProd.is(':checked');
+
+            if (bumpProdId == ccProductId) {
+                bumpProd.val(ppProductId);
+                if (bumpChecked) {
+                    $('#cfAR input[value="'+ccProductId+'"]').attr('checked', false);
+                    $('#cfAR input[value="'+ppProductId+'"]').attr('checked', true);
+                    if (typeof rebuildOrderSummary == 'function') {
+                        rebuildOrderSummary();
+                    }
+                }
+            }
+
+            if (ccProductId == cfptSelectedProductID) {
+                $('input[value="'+ppProductId+'"]', '[data-de-type="orpo"]').click();
+            }
+
+            $('input[value="'+ccProductId+'"]', '[data-de-type="orpo"]').parents('[data-cf-product-template]').hide();
+            $('input[value="'+ppProductId+'"]', '[data-de-type="orpo"]').parents('[data-cf-product-template]').show();
+        });
+    }
+
+    function showCCProducts() {
+        var cfptSelectedProduct = $('input[name="purchase[product_id]"]:checked','[data-de-type="orpo"]');
+        var cfptSelectedProductID = cfptSelectedProduct.val();
+
+        $.each(window.cfpt.productMap, function (index, value) {
+            var ppProductId = value.paypal;
+            var ccProductId = value.creditcard;
+
+            var bumpProd = $('#bump-offer');
+            var bumpProdId = bumpProd.val();
+            var bumpChecked = bumpProd.is(':checked');
+
+            if (bumpProdId == ppProductId) {
+                bumpProd.val(ccProductId);
+                if (bumpChecked) {
+                    $('#cfAR input[value="'+ccProductId+'"]').attr('checked', true);
+                    $('#cfAR input[value="'+ppProductId+'"]').attr('checked', false);
+                    if (typeof rebuildOrderSummary == 'function') {
+                        rebuildOrderSummary();
+                    }
+                }
+            }
+
+            if (ppProductId == cfptSelectedProductID) {
+                $('input[value="'+ccProductId+'"]', '[data-de-type="orpo"]').click();
+            }
+
+            $('input[value="'+ccProductId+'"]', '[data-de-type="orpo"]').parents('[data-cf-product-template]').show();
+            $('input[value="'+ppProductId+'"]', '[data-de-type="orpo"]').parents('[data-cf-product-template]').hide();
+
+        });
+    }
+
+    $('[data-title="cf-pay-selector-cc"]').on('click', function () {
+        window.cfpt.payment_type = 'creditcard';
+
+        if (typeof (window.Stripe) == 'undefined' || window.Stripe === null) {
+            window.stripeResponseHandler = window.oldStripeResponseHandler;
+            window.Stripe = window.oldStripe;
+        }
+
+        $('a[href="#reveal-paypal"]').hide();
+        $('a[href="#submit-form"], a[href="#submit-form-2step-order"]').show();
+        showCCProducts();
+    });
+
+    $('[data-title="cf-pay-selector-pp"], [data-title="cf-pay-selector-cc"]').first().click();
+
+	$('[data-de-type="orpo"]').show();
+
+    $('[data-title="cf-pay-selector-pp"], [data-title="cf-pay-selector-cc"]').first().css({
+        'border-bottom-right-radius':0,
+        'border-bottom-left-radius':0,
+        'border-bottom': 0
+    });
+
+    $('[data-title="cf-pay-selector-pp"], [data-title="cf-pay-selector-cc"]').not(':eq(0)').css({
+        'border-top-right-radius':0,
+        'border-top-left-radius':0
+    });
+
+    $('[data-title="cf-pay-selector-main"]').first().replaceWith($('[data-title="cf-pay-selector-container"]').show());
+
+    $('[href="#reveal-paypal"]').on('click', function (ev) {
+        ev.stopPropagation();
+        ev.preventDefault();
+
+        if (typeof(window.Stripe) != 'undefined') {
+            window.stripeResponseHandler = undefined;
+            window.Stripe = undefined;
+        }
+
+        $(this).hide();
+        $('.paypal-button-context-iframe').fadeIn();
+
+        return false;
+    });
+});
+</script>
+
+<style>
+#payment-request-button {
+    display: none !important;
+}
+
+[data-title="cf-pay-selector-pp"]:hover,
+[data-title="cf-pay-selector-pp"] *:hover,
+[data-title="cf-pay-selector-cc"]:hover,
+[data-title="cf-pay-selector-cc"] *:hover
+{
+    cursor: pointer;
+}
+
+[data-title="cf-pay-selector-pp"] .de,
+[data-title="cf-pay-selector-cc"] .de
+{
+    display: none;
+}
+
+[data-title="cf-pay-selector-headline"] {
+    display: block !important;
+}
+
+[data-title="cf-pay-selector-pp"].selected-pay .de,
+[data-title="cf-pay-selector-cc"].selected-pay .de
+{
+    display: block !important;
+}
+
+[data-title="cf-pay-selector-headline"] .elHeadline:before {
+    content: '\f10c';
+    color: #000;
+    font-family: FontAwesome;
+    padding-right: .5em;
+    font-size: 1.3em;
+    vertical-align: middle;
+    display: inline-block;
+    height: 1em;
+    line-height: 1em;
+}
+
+.selected-pay [data-title="cf-pay-selector-headline"] .elHeadline:before {
+    content: '\f058';
+    color: #1c71ae;
+}
+
+[data-title="cf-pay-selector-container"] .containerInner {
+    padding: 0;
+}
+</style>
